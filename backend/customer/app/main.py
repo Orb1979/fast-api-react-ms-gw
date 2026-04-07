@@ -2,16 +2,11 @@ from fastapi import Depends, FastAPI, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .database import Base, engine, get_db
+from .database import get_db
 from .models import Customer
 from .schemas import CustomerCreateUpdate, CustomerRead
 
 app = FastAPI(title="customer-service")
-
-
-@app.on_event("startup")
-def startup() -> None:
-    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/api/customer/customers", response_model=list[CustomerRead])

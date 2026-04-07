@@ -6,7 +6,8 @@ from jwt import PyJWKClient
 from .config import settings
 
 security = HTTPBearer(auto_error=False)
-_jwks_client = PyJWKClient(f"{settings.issuer_uri.rstrip('/')}/.well-known/jwks.json")
+_issuer = settings.issuer_uri.rstrip("/") + "/"
+_jwks_client = PyJWKClient(f"{_issuer}.well-known/jwks.json")
 
 
 def require_jwt(
@@ -27,7 +28,7 @@ def require_jwt(
             signing_key.key,
             algorithms=["RS256"],
             audience=settings.audience,
-            issuer=settings.issuer_uri.rstrip("/"),
+            issuer=_issuer,
             options=options,
         )
         return payload

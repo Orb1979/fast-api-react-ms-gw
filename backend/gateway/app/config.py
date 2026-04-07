@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     customer_service_url: str = "http://localhost:8081/api/customer"
     order_service_url: str = "http://localhost:8082/api/order"
     product_service_url: str = "http://localhost:8083/api/product"
-    audience: str | None = Field(default=None)
+    # Defaults let local dev run without shell exports.
+    audience: str | None = Field(
+        default="https://dev-lc6vtcbv5ll7xa31.eu.auth0.com/api/v2/"
+    )
 
     @property
     def services(self) -> dict[str, str]:
