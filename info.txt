@@ -107,8 +107,14 @@ Run it
 Backend:
 cd /backend
 docker compose up -d
-<start auth service>
-<start customer service>
+
+cd customer
+source .venv/bin/activate
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8081 --reload
+
+cd gateway
+source .venv/bin/activate
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 
 Postgres on 5432
 auth-service on 8080
@@ -135,13 +141,14 @@ docker-compose -f docker-compose-dev-nginx.yml up -d
 http://localhost:5173/api/customer/customers
 
 #2 check api directly and without vite
-curl http://localhost/api/customer/customers
+curl http://localhost:8080/public/gateway
+curl http://localhost:8081/api/customer/customers
 
-#2 check nginx is reachable
+#3 check nginx is reachable
 docker exec -it msf-nginx ping host.docker.internal
 
-#3 can Nginx container reach the api over the network (no routing tested)
+#4 can Nginx container reach the api over the network (no routing tested)
 docker exec -it msf-nginx curl http://host.docker.internal:8081/api/customer/customers
 
-#4 check nginx logs, it should return HTTP/1.1" 200
+#5 check nginx logs, it should return HTTP/1.1" 200
 docker-compose -f docker-compose-dev-gateway.yml logs nginx

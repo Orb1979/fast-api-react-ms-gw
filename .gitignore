@@ -6,6 +6,15 @@ build/
 dist/
 out/
 
+# Maven
+target/
+
+# Gradle (if applicable)
+build/
+
+# Compiled classes
+*.class
+
 # Production
 *.log
 
@@ -31,4 +40,8 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
 
