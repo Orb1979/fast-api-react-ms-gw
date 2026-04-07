@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: auth-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev-lc6vtcbv5ll7xa31.eu.auth0.com/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+gateway:
+  services:
+    customer: http://localhost:8081/api/customer
+    order:    http://localhost:8082/api/order
+    product:  http://localhost:8083/api/product

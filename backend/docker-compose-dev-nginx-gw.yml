@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: msf-postgres
+    environment:
+      POSTGRES_DB: msf_customer
+      POSTGRES_USER: msf_user
+      POSTGRES_PASSWORD: msf_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # vite > nginx revers proxy > gateway
+  # you will need to adjust vite.config to go through nginx
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: msf-nginx
+    ports:
+      - "80:80"
+    # needed when rest API is outside docker (on host)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/conf.dev.gw:/etc/nginx/conf.d
+
+volumes:
+  postgres_data:
+    driver: local
+

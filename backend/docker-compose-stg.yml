@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: msf-postgres
+    environment:
+      POSTGRES_DB: msf_customer
+      POSTGRES_USER: msf_user
+      POSTGRES_PASSWORD: msf_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # not needed in development
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: msf-nginx
+    depends_on:
+      - api-gateway
+      - customer-service
+    ports:
+      - "80:80"
+#    only needed when needing to connect to API that run on host (outside docker)
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./nginx/conf.stg:/etc/nginx/conf.d
+
+  api-gateway:
+    image: msf-api-gateway:latest
+    container_name: msf-api-gateway
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    environment:
+      ISSUER_URI: "https://dev-lc6vtcbv5ll7xa31.eu.auth0.com/"
+      AUDIENCE: "https://dev-lc6vtcbv5ll7xa31.eu.auth0.com/api/v2/"
+      CUSTOMER_SERVICE_URL: "http://customer-service:8081/api/customer"
+    ports:
+      - "8080:8080"
+
+  customer-service:
+    image: msf-customer-service:latest
+    container_name: msf-customer-service
+    build:
+      context: ./customer
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://msf_user:msf_password@postgres:5432/msf_customer
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local

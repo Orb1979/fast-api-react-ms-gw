@@ -1,0 +1,147 @@
+------------------------------------------------------------------------------------------------------------------------
+Development overview
+------------------------------------------------------------------------------------------------------------------------
+Note going through Nginx in development is optional, we can use these flows:
+SPA → microservices
+SPA → Nginx → microservices
+SPA → Nginx → gateway → microservices
+
+On staging / Production Nginx would host / serve the SPA instead of Vite npm run dev
+
+
+                  ┌────────────────────────────┐
+                  │           Auth0            │
+                  │   Identity Provider (IDP)  │
+                  └────────────▲───────────────┘
+                               │
+          OAuth2 (Authorization Code + PKCE)
+                               │
+                               ▼
+                  ┌────────────────────┐
+                  │      React SPA     │
+                  │  (Vite dev server) │
+                  │ - Handles login    │
+                  │ - Stores JWT       │
+                  │ - Calls backend    │
+                  └─────────┬──────────┘
+                            │
+                            │ HTTP / HTTPS
+                            │ Authorization: Bearer <JWT>
+                            ▼
+                  ┌─────────────────────┐
+                  │        Nginx        │
+                  │  Public endpoint &  │
+                  │   reverse proxy     │
+                  └─────────┬───────────┘
+                            │
+                            │ /api/... → forward to API Gateway
+                            ▼
+                  ┌─────────────────────┐
+                  │  API Gateway (8080) │
+                  │   Spring Boot       │
+                  │ - Validates JWT     │
+                  │ - Extracts claims   │
+                  │ - Routes to backend │
+                  └───────┬─────────────┘
+                          │
+         ┌────────────────┼─────────────────┐
+         ▼                ▼                 ▼
+ ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+ │ Customer MS   │  │  Other MS     │  │  Other MS     │
+ │ 8081          │  │               │  │               │
+ │ Optional JWT  │  │               │  │               │
+ │ validation    │  │               │  │               │
+ └───────────────┘  └───────────────┘  └───────────────┘
+                          │
+                          ▼
+                   ┌───────────────┐
+                   │ PostgreSQL DB │
+                   │ localhost:5432│
+                   │ (Docker)      │
+                   └───────────────┘
+
+------------------------------------------------------------------------------------------------------------------------
+flow
+------------------------------------------------------------------------------------------------------------------------
+
+Flow Summary
+1. SPA login flow:
+ - SPA redirects to Auth0 for login.
+ - SPA receives an authorization code, exchanges it for JWTs (access + ID token).
+ - SPA stores JWTs and sends Authorization: Bearer <JWT> in API requests.
+2. Nginx:
+ - Serves the SPA (static files).
+ - Handles CORS & preflight OPTIONS requests.
+ - Proxies /api/... traffic to API Gateway.
+3. API Gateway (Spring Boot):
+ - Validates JWT against Auth0.
+ - Optionally extracts user claims (e.g., roles, permissions).
+ - Routes requests to the appropriate microservice.
+4. Microservices (Customer, Order, etc.):
+ - Optionally validate JWT again for extra security.
+ - Otherwise, process the request and return the response.
+5. Database:
+ - Microservices interact with PostgreSQL / RDS for persistence.
+
+notes:
+- Both dev and prod share the same logical flow; the main difference is:
+ - Dev: SPA may talk directly to backend without Nginx.
+ - Prod: SPA goes through Nginx/CDN for hosting and reverse proxy.
+- JWT validation happens primarily at API Gateway; microservices may optionally validate.
+- This avoids duplicate steps like “exchange code for JWT” in multiple places.
+
+SPA          NGINX             Gateway                     Microservice
+ |             |                 |                               |
+ |--- HTTP --->|                 |                               |
+ |             |--- HTTP ------->|                               |
+ |             |                 |-- WebClient HTTP request ---> |
+ |             |                 |                               |
+ |             |                 |<-- HTTP response -----------  |
+ |             |<-- HTTP --------|                               |
+ |<-- HTTP --- |                 |                               |
+
+
+------------------------------------------------------------------------------------------------------------------------
+Run it
+------------------------------------------------------------------------------------------------------------------------
+Backend:
+cd /backend
+docker compose up -d
+<start auth service>
+<start customer service>
+
+Postgres on 5432
+auth-service on 8080
+customer-service on 8081
+nginx on 80 (proxying /api/customer/ to customer-service)
+
+frontend:
+cd /frontend/
+npm install
+npm run dev
+
+------------------------------------------------------------------------------------------------------------------------
+debug through nginx reverse proxy
+------------------------------------------------------------------------------------------------------------------------
+Browser → Vite (5173) → Nginx (80) → Spring Boot (8081)
+
+# reload nginx config or restart it
+docker exec msf-nginx nginx -s reload
+docker restart msf-nginx
+
+docker-compose -f docker-compose-dev-nginx.yml up -d
+
+#1 check vite request, port and path
+http://localhost:5173/api/customer/customers
+
+#2 check api directly and without vite
+curl http://localhost/api/customer/customers
+
+#2 check nginx is reachable
+docker exec -it msf-nginx ping host.docker.internal
+
+#3 can Nginx container reach the api over the network (no routing tested)
+docker exec -it msf-nginx curl http://host.docker.internal:8081/api/customer/customers
+
+#4 check nginx logs, it should return HTTP/1.1" 200
+docker-compose -f docker-compose-dev-gateway.yml logs nginx
