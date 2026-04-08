@@ -43,9 +43,7 @@ async def forward_request(
 
     body = await request.body()
     outbound_headers = {
-        k: v
-        for k, v in request.headers.items()
-        if k.lower() not in {"host", "content-length"}
+        k: v for k, v in request.headers.items() if k.lower() not in {"host", "content-length"}
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -57,9 +55,7 @@ async def forward_request(
         )
 
     hop_by_hop = {"transfer-encoding", "connection", "keep-alive"}
-    response_headers = {
-        k: v for k, v in upstream.headers.items() if k.lower() not in hop_by_hop
-    }
+    response_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in hop_by_hop}
     return Response(
         content=upstream.content,
         status_code=upstream.status_code,
