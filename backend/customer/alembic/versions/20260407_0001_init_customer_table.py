@@ -1,9 +1,4 @@
-"""init customer table
-
-Revision ID: 20260407_0001
-Revises:
-Create Date: 2026-04-07 00:00:00
-"""
+"""init customer table"""
 
 from typing import Sequence, Union
 

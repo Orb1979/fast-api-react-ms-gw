@@ -5,7 +5,7 @@ class CustomerCreateUpdate(BaseModel):
     name: str
     email: str | None = None
     phone_number: str | None = Field(default=None, alias="phoneNumber")
-
+    address: str | None = None
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -14,5 +14,5 @@ class CustomerRead(BaseModel):
     name: str
     email: str | None = None
     phone_number: str | None = Field(default=None, alias="phoneNumber")
-
+    address: str | None = None
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
