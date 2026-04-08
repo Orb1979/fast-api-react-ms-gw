@@ -21,7 +21,7 @@ export const useCustomerService = () => {
     };
 
     const deleteCustomer = async (id) => {
-        const res = await authFetch(`${API_BASE}${id}`, { method: "DELETE" });
+        const res = await authFetch(`${API_BASE}/${id}`, { method: "DELETE" });
         if (!res.ok && res.status !== 204) throw new Error("Failed to delete customer");
     };
 
