@@ -35,7 +35,7 @@ yarn-error.log*
 Thumbs.db
 
 # IDE / Editor
-.vscode/
+#.vscode/
 .idea/
 
 # TypeScript

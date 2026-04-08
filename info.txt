@@ -116,15 +116,16 @@ cd gateway
 source .venv/bin/activate
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 
-Postgres on 5432
-auth-service on 8080
-customer-service on 8081
-nginx on 80 (proxying /api/customer/ to customer-service)
-
 frontend:
 cd /frontend/
 npm install
 npm run dev
+
+ports:
+Postgres 5432
+gateway-service 8080
+customer-service 8081
+nginx 80 
 
 ------------------------------------------------------------------------------------------------------------------------
 debug through nginx reverse proxy
