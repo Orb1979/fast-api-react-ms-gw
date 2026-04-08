@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status, APIRouter
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -7,14 +7,15 @@ from .models import Customer
 from .schemas import CustomerCreateUpdate, CustomerRead
 
 app = FastAPI(title="customer-service")
+router = APIRouter(prefix="/api/customer")
 
 
-@app.get("/api/customer/customers", response_model=list[CustomerRead])
+@router.get("/customers", response_model=list[CustomerRead])
 def find_all(db: Session = Depends(get_db)) -> list[Customer]:
     return list(db.scalars(select(Customer)).all())
 
 
-@app.get("/api/customer/customers/{id}", response_model=CustomerRead)
+@router.get("/customers/{id}", response_model=CustomerRead)
 def find_one(id: int, db: Session = Depends(get_db)) -> Customer:
     customer = db.get(Customer, id)
     if customer is None:
@@ -22,8 +23,8 @@ def find_one(id: int, db: Session = Depends(get_db)) -> Customer:
     return customer
 
 
-@app.post(
-    "/api/customer/customers",
+@router.post(
+    "/customers",
     response_model=CustomerRead,
     status_code=status.HTTP_201_CREATED,
 )
@@ -39,10 +40,8 @@ def create(payload: CustomerCreateUpdate, db: Session = Depends(get_db)) -> Cust
     return customer
 
 
-@app.put("/api/customer/customers/{id}", response_model=CustomerRead)
-def update(
-    id: int, payload: CustomerCreateUpdate, db: Session = Depends(get_db)
-) -> Customer:
+@router.put("/customers/{id}", response_model=CustomerRead)
+def update(id: int, payload: CustomerCreateUpdate, db: Session = Depends(get_db)) -> Customer:
     customer = db.get(Customer, id)
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -54,7 +53,7 @@ def update(
     return customer
 
 
-@app.delete("/api/customer/customers/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/customers/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete(id: int, db: Session = Depends(get_db)) -> Response:
     customer = db.get(Customer, id)
     if customer is None:
@@ -64,8 +63,5 @@ def delete(id: int, db: Session = Depends(get_db)) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# Frontend compatibility for current delete URL composition:
-# /api/customer/customers{id} (missing slash).
-@app.delete("/api/customer/customers{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_no_slash(id: int, db: Session = Depends(get_db)) -> Response:
-    return delete(id=id, db=db)
+# mount the router to the app
+app.include_router(router)
